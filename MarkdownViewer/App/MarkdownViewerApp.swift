@@ -5,7 +5,7 @@ struct MarkdownViewerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var recentFilesStore = RecentFilesStore.shared
     @ObservedObject private var editorSettings = ExternalEditorSettings.shared
-    @ObservedObject private var appearanceSettings = AppearanceSettings.shared
+    @StateObject private var appearanceSettings = AppearanceSettings.shared
     @AppStorage("autoRaiseOnFileChange") private var autoRaiseOnFileChange = false
 
     var body: some Scene {

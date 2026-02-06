@@ -22,11 +22,14 @@ final class AppearanceSettings: ObservableObject {
     private init() {
         isLoading = true
         let raw = UserDefaults.standard.integer(forKey: "appearanceMode")
+        if raw != 0, AppearanceMode(rawValue: raw) == nil {
+            NSLog("AppearanceSettings: unexpected stored value %d, defaulting to system", raw)
+        }
         mode = AppearanceMode(rawValue: raw) ?? .system
         isLoading = false
         // NSApp may be nil during early init; defer until the app is ready
-        DispatchQueue.main.async { [self] in
-            applyAppearance()
+        DispatchQueue.main.async { [weak self] in
+            self?.applyAppearance()
         }
     }
 
