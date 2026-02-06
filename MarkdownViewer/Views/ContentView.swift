@@ -8,7 +8,7 @@ struct ContentView: View {
     @State private var isOutlinePinned = false
     @State private var scrollRequest: ScrollRequest?
     @State private var activeAnchorID: String?
-    @StateObject private var appearanceSettings = AppearanceSettings.shared
+    @ObservedObject private var appearanceSettings = AppearanceSettings.shared
 
     init(documentState: DocumentState = DocumentState()) {
         _documentState = StateObject(wrappedValue: documentState)
