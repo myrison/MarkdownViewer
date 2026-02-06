@@ -82,9 +82,12 @@ final class MarkdownRendererHTMLEscapingTests: XCTestCase {
     // MARK: - Mixed content
 
     func testMixedEntitiesAndBareCharacters() {
+        // The Markdown parser resolves &amp; -> & and &lt; -> <, so the renderer
+        // receives four special characters that all need escaping. The output should
+        // contain exactly four escaped entities in the paragraph.
         let html = renderPlainText("&amp; and & and &lt; and <")
-        XCTAssertTrue(html.contains("&amp;"), "Should contain preserved or escaped & entity")
-        XCTAssertTrue(html.contains("&lt;"), "Should contain preserved or escaped < entity")
+        XCTAssertEqual(html, "<p>&amp; and &amp; and &lt; and &lt;</p>\n",
+                        "All special characters should be escaped, got: \(html)")
     }
 
     // MARK: - Entity at boundaries
@@ -103,17 +106,22 @@ final class MarkdownRendererHTMLEscapingTests: XCTestCase {
 
     // MARK: - Code blocks escape all entities (no entity preservation inside code)
 
-    func testCodeBlockEscapesEntities() {
+    func testCodeBlockEscapesAngleBracketsAndPreservesEntities() {
+        // In code blocks, the source text is literal: &amp; stays as &amp; (not resolved),
+        // and <tag> stays as <tag>. The renderer's escapeHTML should preserve the valid
+        // &amp; entity and escape the bare < and > in <tag>.
         let input = """
         ```
         &amp; and <tag>
         ```
         """
         let html = renderPlainText(input)
-        XCTAssertTrue(html.contains("&amp;amp;") || html.contains("&amp;"),
-                       "Code block should escape or preserve entities consistently, got: \(html)")
+        XCTAssertTrue(html.contains("&amp;"),
+                       "Code block should preserve &amp; entity, got: \(html)")
         XCTAssertTrue(html.contains("&lt;tag&gt;"),
-                       "Code block should escape angle brackets, got: \(html)")
+                       "Code block should escape angle brackets in <tag>, got: \(html)")
+        XCTAssertFalse(html.contains("<tag>"),
+                        "Raw <tag> should not appear in output, got: \(html)")
     }
 
     func testInlineCodeEscapesAngleBrackets() {
