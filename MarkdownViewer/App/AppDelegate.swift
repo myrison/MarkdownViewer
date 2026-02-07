@@ -14,7 +14,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var isTerminating = false
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls {
+        let valid = urls.filter { FileManager.default.fileExists(atPath: $0.path) }
+        for url in valid {
             openFile(at: url)
         }
         NSApplication.shared.activate(ignoringOtherApps: true)

@@ -26,10 +26,12 @@ cp "MarkdownViewer/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 # Copy icon
 cp "AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 
-# Copy SwiftPM resources bundle if present
+# Copy SwiftPM resources bundle if present.
+# Place it at the .app root level where SPM's generated Bundle.module expects it
+# (Bundle.main.bundleURL + bundle name), not inside Contents/Resources/.
 RESOURCE_BUNDLE="$BUILD_DIR/MarkdownViewer_MarkdownViewer.bundle"
 if [[ -d "$RESOURCE_BUNDLE" ]]; then
-    cp -R "$RESOURCE_BUNDLE" "$APP_BUNDLE/Contents/Resources/"
+    cp -R "$RESOURCE_BUNDLE" "$APP_BUNDLE/"
 fi
 
 # Create PkgInfo
