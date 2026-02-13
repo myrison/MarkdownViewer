@@ -56,6 +56,7 @@ struct MarkdownHTMLTemplate {
         let beautifulMermaid = safeScript(resourceString(name: "beautiful-mermaid", extension: "js"))
         let mermaidInit = safeScript(resourceString(name: "beautiful-mermaid-init", extension: "js"))
         let toc = safeScript(resourceString(name: "toc", extension: "js"))
+        let copyCode = safeScript(resourceString(name: "copy-code", extension: "js"))
         return """
         <script>
         \(highlight)
@@ -74,6 +75,9 @@ struct MarkdownHTMLTemplate {
         </script>
         <script>
         \(toc)
+        </script>
+        <script>
+        \(copyCode)
         </script>
         """
     }
