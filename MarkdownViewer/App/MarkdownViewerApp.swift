@@ -7,6 +7,7 @@ struct MarkdownViewerApp: App {
     @ObservedObject private var editorSettings = ExternalEditorSettings.shared
     @ObservedObject private var appearanceSettings = AppearanceSettings.shared
     @AppStorage("autoRaiseOnFileChange") private var autoRaiseOnFileChange = false
+    @AppStorage("showDocumentStatistics") private var showDocumentStatistics = true
 
     var body: some Scene {
         WindowGroup {
@@ -119,6 +120,8 @@ struct MarkdownViewerApp: App {
                 .keyboardShortcut("0", modifiers: .command)
 
                 Divider()
+
+                Toggle("Show Document Statistics", isOn: $showDocumentStatistics)
 
                 Toggle("Bring to Front on File Change", isOn: $autoRaiseOnFileChange)
             }

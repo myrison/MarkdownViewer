@@ -17,6 +17,9 @@ class DocumentState: ObservableObject {
     @Published var findQuery: String = ""
     @Published var findRequest: FindRequest?
     @Published var findFocusToken: UUID = UUID()
+    @Published var wordCount: Int = 0
+    @Published var characterCount: Int = 0
+    @Published var readingTimeMinutes: Int = 0
     var currentURL: URL?
     weak var webView: WKWebView?
     private var fileMonitor: DispatchSourceFileSystemObject?
@@ -52,10 +55,14 @@ class DocumentState: ObservableObject {
             htmlContent = wrapInHTML(frontMatterHTML + rendered.html, title: url.lastPathComponent)
             title = url.lastPathComponent
             outlineItems = MarkdownDocumentParser.normalizedOutline(rendered.outline)
+            updateStatistics(content)
         } catch {
             htmlContent = wrapInHTML("<p>Error loading file: \(error.localizedDescription)</p>", title: "Error")
             title = "Error"
             outlineItems = []
+            wordCount = 0
+            characterCount = 0
+            readingTimeMinutes = 0
         }
     }
 
@@ -100,6 +107,17 @@ class DocumentState: ObservableObject {
         op.showsPrintPanel = true
         op.showsProgressPanel = true
         op.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
+    }
+
+    private func updateStatistics(_ markdown: String) {
+        let words = markdown.split { $0.isWhitespace || $0.isNewline }
+        wordCount = words.count
+        characterCount = markdown.count
+        if wordCount == 0 {
+            readingTimeMinutes = 0
+        } else {
+            readingTimeMinutes = max(1, Int(ceil(Double(wordCount) / 265.0)))
+        }
     }
 
     func reload() {
