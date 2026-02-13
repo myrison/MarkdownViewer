@@ -4,6 +4,7 @@ import CoreGraphics
 import Foundation
 import Markdown
 import SwiftUI
+import WebKit
 
 class DocumentState: ObservableObject {
     @Published var htmlContent: String = ""
@@ -17,6 +18,7 @@ class DocumentState: ObservableObject {
     @Published var findRequest: FindRequest?
     @Published var findFocusToken: UUID = UUID()
     var currentURL: URL?
+    weak var webView: WKWebView?
     private var fileMonitor: DispatchSourceFileSystemObject?
     private var lastModificationDate: Date?
     private let recentFilesStore: RecentFilesStore
@@ -78,6 +80,26 @@ class DocumentState: ObservableObject {
             .replacingOccurrences(of: "<", with: "&lt;")
             .replacingOccurrences(of: ">", with: "&gt;")
             .replacingOccurrences(of: "\"", with: "&quot;")
+    }
+
+    func printDocument() {
+        guard let webView = webView, let window = webView.window else {
+            NSSound.beep()
+            return
+        }
+        let printInfo = NSPrintInfo.shared.copy() as! NSPrintInfo
+        printInfo.topMargin = 36
+        printInfo.bottomMargin = 36
+        printInfo.leftMargin = 36
+        printInfo.rightMargin = 36
+        if let filename = currentURL?.deletingPathExtension().lastPathComponent {
+            printInfo.jobDisposition = .spool
+            printInfo.dictionary().setObject(filename, forKey: NSPrintInfo.AttributeKey.jobSavingURL as NSCopying)
+        }
+        let op = webView.printOperation(with: printInfo)
+        op.showsPrintPanel = true
+        op.showsProgressPanel = true
+        op.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
     }
 
     func reload() {

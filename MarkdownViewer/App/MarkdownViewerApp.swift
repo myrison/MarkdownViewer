@@ -33,6 +33,12 @@ struct MarkdownViewerApp: App {
                     }
                 }
             }
+            CommandGroup(replacing: .printItem) {
+                Button("Print...") {
+                    appDelegate.printDocument()
+                }
+                .keyboardShortcut("p", modifiers: .command)
+            }
             CommandGroup(after: .newItem) {
                 Button("New Tab") {
                     appDelegate.openEmptyTab()

@@ -158,6 +158,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         activeDocumentState()?.resetZoom()
     }
 
+    func printDocument() {
+        activeDocumentState()?.printDocument()
+    }
+
     func showFindBar() {
         activeDocumentState()?.showFindBar()
     }

@@ -284,3 +284,33 @@ pre:hover .copy-code-btn {
 .markdown-alert.markdown-alert-caution .markdown-alert-title {
     color: var(--color-caution);
 }
+/* Print styles */
+@media print {
+    :root {
+        --color-fg-default: #1f2328;
+        --color-fg-muted: #656d76;
+        --color-canvas-default: #ffffff;
+        --color-canvas-subtle: #f6f8fa;
+        --color-border-default: #d0d7de;
+        --color-border-muted: hsla(210,18%,87%,1);
+        --color-accent-fg: #0969da;
+        --color-danger-fg: #d1242f;
+    }
+    body {
+        background-color: #ffffff;
+        color: #1f2328;
+    }
+    .copy-code-btn {
+        display: none !important;
+    }
+    mark.mv-find-match, mark.mv-find-active {
+        background-color: transparent;
+        color: inherit;
+    }
+    pre, code, img, table, blockquote {
+        break-inside: avoid;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        break-after: avoid;
+    }
+}

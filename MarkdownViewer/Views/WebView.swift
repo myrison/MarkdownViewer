@@ -15,6 +15,7 @@ struct WebView: NSViewRepresentable {
     let zoomLevel: CGFloat
     let findRequest: FindRequest?
     let onActiveAnchorChange: ((String?) -> Void)?
+    let documentState: DocumentState?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onActiveAnchorChange: onActiveAnchorChange)
@@ -30,6 +31,7 @@ struct WebView: NSViewRepresentable {
         webView.setValue(false, forKey: "drawsBackground")
         webView.pageZoom = zoomLevel
         context.coordinator.lastZoomLevel = zoomLevel
+        documentState?.webView = webView
         return webView
     }
 

@@ -50,7 +50,8 @@ struct ContentView: View {
                 findRequest: documentState.findRequest,
                 onActiveAnchorChange: { anchorID in
                     activeAnchorID = anchorID
-                }
+                },
+                documentState: documentState
             )
         }
     }
