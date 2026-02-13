@@ -9,6 +9,7 @@ struct ContentView: View {
     @State private var scrollRequest: ScrollRequest?
     @State private var activeAnchorID: String?
     @ObservedObject private var appearanceSettings = AppearanceSettings.shared
+    @AppStorage("showDocumentStatistics") private var showDocumentStatistics = true
 
     init(documentState: DocumentState = DocumentState()) {
         _documentState = StateObject(wrappedValue: documentState)
@@ -24,6 +25,26 @@ struct ContentView: View {
 
     private var showFloatingOutline: Bool {
         canShowOutline && !isOutlinePinned && (isHoveringEdge || isHoveringSidebar)
+    }
+
+    @ViewBuilder
+    private var statusBar: some View {
+        if showDocumentStatistics && !documentState.htmlContent.isEmpty {
+            Divider()
+            HStack(spacing: 0) {
+                Text("\(documentState.wordCount) words")
+                Text(" · ").foregroundColor(Color(NSColor.tertiaryLabelColor))
+                Text("\(documentState.characterCount) characters")
+                Text(" · ").foregroundColor(Color(NSColor.tertiaryLabelColor))
+                Text("~\(documentState.readingTimeMinutes) min read")
+                Spacer()
+            }
+            .font(.system(size: 11))
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .background(Color(NSColor.windowBackgroundColor))
+        }
     }
 
     @ViewBuilder
@@ -56,15 +77,18 @@ struct ContentView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            documentView
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            if showPinnedOutline {
-                OutlineSidebar(items: documentState.outlineItems, activeAnchorID: activeAnchorID) { item in
-                    scrollRequest = ScrollRequest(id: item.anchorID, token: UUID())
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                documentView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if showPinnedOutline {
+                    OutlineSidebar(items: documentState.outlineItems, activeAnchorID: activeAnchorID) { item in
+                        scrollRequest = ScrollRequest(id: item.anchorID, token: UUID())
+                    }
+                    .transition(.move(edge: .trailing))
                 }
-                .transition(.move(edge: .trailing))
             }
+            statusBar
         }
         .frame(minWidth: 600, minHeight: 400)
         .navigationTitle(documentState.title)
