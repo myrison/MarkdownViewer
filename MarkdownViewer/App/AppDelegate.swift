@@ -13,11 +13,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsCancellable: AnyCancellable?
     private var didRestoreOpenFiles = false
     private var isTerminating = false
+    private var pendingOpenURLs: [URL] = []
 
     func application(_ application: NSApplication, open urls: [URL]) {
         let valid = urls.filter { FileManager.default.fileExists(atPath: $0.path) }
-        for url in valid {
-            openFile(at: url)
+        if didRestoreOpenFiles {
+            for url in valid {
+                openFile(at: url)
+            }
+        } else {
+            // Defer until after session restoration so the Finder file
+            // opens last and becomes the active tab.
+            pendingOpenURLs.append(contentsOf: valid)
         }
         NSApplication.shared.activate(ignoringOtherApps: true)
     }
@@ -424,8 +431,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func restoreOpenFilesIfNeeded() {
         guard !didRestoreOpenFiles else { return }
-        let urls = openFilesStore.openFiles
-        guard !urls.isEmpty else { return }
+        let savedURLs = openFilesStore.openFiles
+
+        // Nothing to restore and nothing pending from Finder
+        if savedURLs.isEmpty && pendingOpenURLs.isEmpty {
+            didRestoreOpenFiles = true
+            return
+        }
+
         guard NSApplication.shared.windows.contains(where: { $0.documentState != nil }) else {
             DispatchQueue.main.async { [weak self] in
                 self?.restoreOpenFilesIfNeeded()
@@ -433,10 +446,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         didRestoreOpenFiles = true
+
+        let pendingPaths = Set(pendingOpenURLs.map { $0.path })
         let existing = Set(currentOpenFileURLs().map { $0.path })
-        for url in urls where !existing.contains(url.path) {
+
+        // Restore saved session first (skip files that Finder will open)
+        for url in savedURLs where !existing.contains(url.path) && !pendingPaths.contains(url.path) {
             openFile(at: url)
         }
+
+        // Open Finder-requested files last so they become the active tab
+        for url in pendingOpenURLs {
+            openFile(at: url)
+        }
+
+        // Ensure the Finder-requested file is focused
+        if let lastURL = pendingOpenURLs.last,
+           let window = NSApplication.shared.windows.first(where: {
+               $0.documentState?.currentURL?.path == lastURL.path
+           }) {
+            window.makeKeyAndOrderFront(nil)
+        }
+
+        pendingOpenURLs.removeAll()
     }
 
     private func handleWindowWillClose(_ window: NSWindow) {
