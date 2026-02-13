@@ -2,10 +2,10 @@
 
 ## Priority Features
 
-### 1. Copy-to-Clipboard Button on Code Blocks
+### ~~1. Copy-to-Clipboard Button on Code Blocks~~ ✅
 **Appeal:** Very High | **Complexity:** Very Low
 
-GitHub made this the expected behavior — a small clipboard icon that appears on hover over fenced code blocks. Developers copy code snippets constantly, and having to manually select text in a code block is friction everyone notices. Implementation is ~30 lines of JS/CSS injected into the existing HTML template to add a button on each `<pre><code>` block.
+~~GitHub made this the expected behavior — a small clipboard icon that appears on hover over fenced code blocks. Developers copy code snippets constantly, and having to manually select text in a code block is friction everyone notices. Implementation is ~30 lines of JS/CSS injected into the existing HTML template to add a button on each `<pre><code>` block.~~
 
 ### 2. PDF / Print Export
 **Appeal:** Very High | **Complexity:** Low–Medium
@@ -22,10 +22,10 @@ Near-universal across competitors (Typora, Obsidian, MacDown, GitHub, iA Writer 
 
 A subtle but universally appreciated feature — word count, character count, and estimated reading time displayed in a status bar or footer. Marked 2, Typora, iA Writer, and MarkView all have this. Implementation is trivial: a JS function that counts words in the rendered text content, divides by ~250 WPM for reading time, and displays it in a fixed-position footer or a native SwiftUI status bar below the WebView.
 
-### 5. GitHub-Style Alerts / Callouts
+### ~~5. GitHub-Style Alerts / Callouts~~ ✅
 **Appeal:** Medium–High (growing) | **Complexity:** Medium
 
-The `> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`, `> [!CAUTION]` syntax is increasingly standard — GitHub adopted it, Obsidian has callouts, and more README files use them every day. Currently these render as plain blockquotes, losing their visual meaning. Implementation requires post-processing blockquotes in the rendered HTML or extending the `MarkupWalker` to emit styled HTML for these patterns.
+~~The `> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`, `> [!CAUTION]` syntax is increasingly standard — GitHub adopted it, Obsidian has callouts, and more README files use them every day. Currently these render as plain blockquotes, losing their visual meaning. Implementation requires post-processing blockquotes in the rendered HTML or extending the `MarkupWalker` to emit styled HTML for these patterns.~~
 
 ---
 
