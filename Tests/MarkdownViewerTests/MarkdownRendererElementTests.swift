@@ -216,6 +216,99 @@ final class MarkdownRendererElementTests: XCTestCase {
                        "Emphasis inside blockquote should render correctly, got: \(rendered.html)")
     }
 
+    // MARK: - GitHub-style alerts
+
+    func testNoteAlertRendersAsDiv() {
+        let input = """
+        > [!NOTE]
+        > This is a note.
+        """
+        let rendered = render(input)
+
+        XCTAssertTrue(rendered.html.contains("markdown-alert markdown-alert-note"),
+                       "Should produce alert div, got: \(rendered.html)")
+        XCTAssertTrue(rendered.html.contains("markdown-alert-title"),
+                       "Should produce alert title")
+        XCTAssertTrue(rendered.html.contains("Note"),
+                       "Should contain title text 'Note'")
+        XCTAssertTrue(rendered.html.contains("This is a note."),
+                       "Should contain body text")
+        XCTAssertFalse(rendered.html.contains("[!NOTE]"),
+                        "Should strip the alert marker from output")
+        XCTAssertFalse(rendered.html.contains("<blockquote>"),
+                        "Alert should not render as blockquote")
+    }
+
+    func testAllFiveAlertTypesRender() {
+        let types = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"]
+        for type in types {
+            let input = """
+            > [!\(type)]
+            > Body text.
+            """
+            let rendered = render(input)
+            XCTAssertTrue(rendered.html.contains("markdown-alert-\(type.lowercased())"),
+                           "\(type) alert should have correct class, got: \(rendered.html)")
+        }
+    }
+
+    func testAlertContainsSVGIcon() {
+        let input = """
+        > [!WARNING]
+        > Be careful!
+        """
+        let rendered = render(input)
+
+        XCTAssertTrue(rendered.html.contains("<svg"),
+                       "Alert should contain SVG icon, got: \(rendered.html)")
+        XCTAssertTrue(rendered.html.contains("viewBox=\"0 0 16 16\""),
+                       "SVG should have 16x16 viewBox")
+    }
+
+    func testRegularBlockquoteUnchanged() {
+        let input = """
+        > This is a regular blockquote.
+        """
+        let rendered = render(input)
+
+        XCTAssertTrue(rendered.html.contains("<blockquote>"),
+                       "Regular blockquote should render normally, got: \(rendered.html)")
+        XCTAssertFalse(rendered.html.contains("markdown-alert"),
+                        "Regular blockquote should not be an alert")
+    }
+
+    func testAlertMarkerWithTextOnSameLineIsNotAlert() {
+        let input = """
+        > [!NOTE] Extra text on same line
+        """
+        let rendered = render(input)
+
+        // Per GitHub spec, text on the same line means it's NOT an alert
+        XCTAssertTrue(rendered.html.contains("<blockquote>"),
+                       "Should render as regular blockquote, got: \(rendered.html)")
+        XCTAssertFalse(rendered.html.contains("markdown-alert"),
+                        "Should not be detected as alert")
+    }
+
+    func testAlertWithMultipleParagraphs() {
+        let input = """
+        > [!TIP]
+        > First paragraph.
+        >
+        > Second paragraph with **bold**.
+        """
+        let rendered = render(input)
+
+        XCTAssertTrue(rendered.html.contains("markdown-alert-tip"),
+                       "Should be a tip alert")
+        XCTAssertTrue(rendered.html.contains("First paragraph."),
+                       "Should contain first paragraph")
+        XCTAssertTrue(rendered.html.contains("Second paragraph"),
+                       "Should contain second paragraph")
+        XCTAssertTrue(rendered.html.contains("<strong>bold</strong>"),
+                       "Should render inline formatting in alert body")
+    }
+
     // MARK: - render() resets state between calls
 
     func testRenderResetsStateBetweenCalls() {
