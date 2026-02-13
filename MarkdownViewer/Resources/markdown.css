@@ -188,3 +188,36 @@ mark.mv-find-match {
 mark.mv-find-active {
     background-color: #ffd24d;
 }
+.copy-code-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--color-border-default);
+    border-radius: 6px;
+    background-color: var(--color-canvas-default);
+    color: var(--color-fg-muted);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+pre:hover .copy-code-btn {
+    opacity: 1;
+}
+.copy-code-btn:hover {
+    color: var(--color-fg-default);
+    background-color: var(--color-canvas-subtle);
+}
+.copy-code-btn.copied {
+    color: #1a7f37;
+}
+@media (prefers-color-scheme: dark) {
+    .copy-code-btn.copied {
+        color: #3fb950;
+    }
+}
