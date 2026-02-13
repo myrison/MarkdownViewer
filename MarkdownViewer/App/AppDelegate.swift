@@ -8,6 +8,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let openFilesStore = OpenFilesStore.shared
     private var windowCloseObserver: Any?
     private var keyDownMonitor: Any?
+    private var rightClickMonitor: Any?
     private var editorMenuItem: NSMenuItem?
     private var settingsCancellable: AnyCancellable?
     private var didRestoreOpenFiles = false
@@ -55,6 +56,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return nil
         }
+        rightClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .rightMouseDown) { [weak self] event in
+            guard let self else { return event }
+            return self.handleTabBarRightClick(event)
+        }
         DispatchQueue.main.async { [weak self] in
             self?.restoreOpenFilesIfNeeded()
         }
@@ -95,6 +100,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if let keyDownMonitor {
             NSEvent.removeMonitor(keyDownMonitor)
+        }
+        if let rightClickMonitor {
+            NSEvent.removeMonitor(rightClickMonitor)
         }
         settingsCancellable?.cancel()
     }
@@ -230,6 +238,104 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             withApplicationAt: editorURL,
             configuration: NSWorkspace.OpenConfiguration()
         )
+    }
+
+    // MARK: - Tab context menu
+
+    private func handleTabBarRightClick(_ event: NSEvent) -> NSEvent? {
+        guard let window = event.window, window.documentState != nil else { return event }
+
+        let locationInWindow = event.locationInWindow
+        let contentRect = window.contentLayoutRect
+
+        // Only handle clicks above the content area (title bar / tab bar)
+        guard locationInWindow.y > contentRect.maxY else { return event }
+
+        let tabs = window.tabbedWindows ?? [window]
+
+        let targetWindow: NSWindow
+        if tabs.count > 1 {
+            // Estimate which tab was clicked based on horizontal position.
+            // The traffic-light buttons occupy ~80px on the left; the
+            // "new tab" button takes ~40px on the right.
+            let tabBarLeft: CGFloat = 80
+            let tabBarRight = window.frame.width - 40
+            let tabBarWidth = max(tabBarRight - tabBarLeft, 1)
+            let tabWidth = tabBarWidth / CGFloat(tabs.count)
+            let relativeX = locationInWindow.x - tabBarLeft
+            let tabIndex = max(0, min(Int(relativeX / tabWidth), tabs.count - 1))
+            targetWindow = tabs[tabIndex]
+        } else {
+            targetWindow = window
+        }
+
+        showTabContextMenu(for: targetWindow, in: tabs, with: event)
+        return nil
+    }
+
+    private func showTabContextMenu(for targetWindow: NSWindow, in tabs: [NSWindow], with event: NSEvent) {
+        guard let tabIndex = tabs.firstIndex(of: targetWindow) else { return }
+
+        let menu = NSMenu()
+
+        let closeItem = NSMenuItem(title: "Close Tab", action: #selector(contextCloseTab(_:)), keyEquivalent: "")
+        closeItem.target = self
+        closeItem.representedObject = targetWindow
+        menu.addItem(closeItem)
+
+        menu.addItem(.separator())
+
+        let closeOthers = NSMenuItem(title: "Close Other Tabs", action: #selector(contextCloseOtherTabs(_:)), keyEquivalent: "")
+        closeOthers.target = self
+        closeOthers.representedObject = targetWindow
+        closeOthers.isEnabled = tabs.count > 1
+        menu.addItem(closeOthers)
+
+        let closeRight = NSMenuItem(title: "Close Tabs to the Right", action: #selector(contextCloseTabsToRight(_:)), keyEquivalent: "")
+        closeRight.target = self
+        closeRight.representedObject = targetWindow
+        closeRight.isEnabled = tabIndex < tabs.count - 1
+        menu.addItem(closeRight)
+
+        let closeLeft = NSMenuItem(title: "Close Tabs to the Left", action: #selector(contextCloseTabsToLeft(_:)), keyEquivalent: "")
+        closeLeft.target = self
+        closeLeft.representedObject = targetWindow
+        closeLeft.isEnabled = tabIndex > 0
+        menu.addItem(closeLeft)
+
+        guard let contentView = event.window?.contentView else { return }
+        NSMenu.popUpContextMenu(menu, with: event, for: contentView)
+    }
+
+    @objc private func contextCloseTab(_ sender: NSMenuItem) {
+        guard let window = sender.representedObject as? NSWindow else { return }
+        window.close()
+    }
+
+    @objc private func contextCloseOtherTabs(_ sender: NSMenuItem) {
+        guard let targetWindow = sender.representedObject as? NSWindow else { return }
+        let tabs = targetWindow.tabbedWindows ?? [targetWindow]
+        for tab in tabs where tab !== targetWindow {
+            tab.close()
+        }
+    }
+
+    @objc private func contextCloseTabsToRight(_ sender: NSMenuItem) {
+        guard let targetWindow = sender.representedObject as? NSWindow else { return }
+        let tabs = targetWindow.tabbedWindows ?? [targetWindow]
+        guard let index = tabs.firstIndex(of: targetWindow) else { return }
+        for tab in tabs[(index + 1)...] {
+            tab.close()
+        }
+    }
+
+    @objc private func contextCloseTabsToLeft(_ sender: NSMenuItem) {
+        guard let targetWindow = sender.representedObject as? NSWindow else { return }
+        let tabs = targetWindow.tabbedWindows ?? [targetWindow]
+        guard let index = tabs.firstIndex(of: targetWindow) else { return }
+        for tab in tabs[..<index] {
+            tab.close()
+        }
     }
 
     func selectNextTab() {
