@@ -303,6 +303,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         closeLeft.isEnabled = tabIndex > 0
         menu.addItem(closeLeft)
 
+        let hasFile = targetWindow.documentState?.currentURL != nil
+
+        menu.addItem(.separator())
+
+        let copyPath = NSMenuItem(title: "Copy File Path", action: #selector(contextCopyFilePath(_:)), keyEquivalent: "")
+        copyPath.target = self
+        copyPath.representedObject = targetWindow
+        copyPath.isEnabled = hasFile
+        menu.addItem(copyPath)
+
+        let openInFinder = NSMenuItem(title: "Open in Finder", action: #selector(contextOpenInFinder(_:)), keyEquivalent: "")
+        openInFinder.target = self
+        openInFinder.representedObject = targetWindow
+        openInFinder.isEnabled = hasFile
+        menu.addItem(openInFinder)
+
         guard let contentView = event.window?.contentView else { return }
         NSMenu.popUpContextMenu(menu, with: event, for: contentView)
     }
@@ -336,6 +352,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         for tab in tabs[..<index] {
             tab.close()
         }
+    }
+
+    @objc private func contextCopyFilePath(_ sender: NSMenuItem) {
+        guard let window = sender.representedObject as? NSWindow,
+              let url = window.documentState?.currentURL else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url.path, forType: .string)
+    }
+
+    @objc private func contextOpenInFinder(_ sender: NSMenuItem) {
+        guard let window = sender.representedObject as? NSWindow,
+              let url = window.documentState?.currentURL else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
     func selectNextTab() {
