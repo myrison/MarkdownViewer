@@ -28,6 +28,8 @@ struct WebView: NSViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.setValue(false, forKey: "drawsBackground")
+        webView.pageZoom = zoomLevel
+        context.coordinator.lastZoomLevel = zoomLevel
         return webView
     }
 
@@ -57,8 +59,7 @@ struct WebView: NSViewRepresentable {
 
         if zoomLevel != context.coordinator.lastZoomLevel {
             context.coordinator.lastZoomLevel = zoomLevel
-            let percentage = Int(zoomLevel * 100)
-            webView.evaluateJavaScript("document.body.style.zoom = '\(percentage)%'", completionHandler: nil)
+            webView.pageZoom = zoomLevel
         }
 
         if let request = findRequest {
@@ -112,8 +113,7 @@ struct WebView: NSViewRepresentable {
             isLoading = false
 
             if lastZoomLevel != 1.0 {
-                let percentage = Int(lastZoomLevel * 100)
-                webView.evaluateJavaScript("document.body.style.zoom = '\(percentage)%'", completionHandler: nil)
+                webView.pageZoom = lastZoomLevel
             }
 
             if savedScrollY > 0 {

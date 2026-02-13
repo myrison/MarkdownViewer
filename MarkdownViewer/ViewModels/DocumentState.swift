@@ -21,8 +21,14 @@ class DocumentState: ObservableObject {
     private var lastModificationDate: Date?
     private let recentFilesStore: RecentFilesStore
 
+    private static let zoomLevelKey = "zoomLevel"
+
     init(recentFilesStore: RecentFilesStore = .shared) {
         self.recentFilesStore = recentFilesStore
+        let saved = UserDefaults.standard.double(forKey: DocumentState.zoomLevelKey)
+        if saved >= 0.5 && saved <= 3.0 {
+            zoomLevel = saved
+        }
     }
 
     deinit {
@@ -82,14 +88,21 @@ class DocumentState: ObservableObject {
 
     func zoomIn() {
         zoomLevel = min(zoomLevel + 0.1, 3.0)
+        saveZoomLevel()
     }
 
     func zoomOut() {
         zoomLevel = max(zoomLevel - 0.1, 0.5)
+        saveZoomLevel()
     }
 
     func resetZoom() {
         zoomLevel = 1.0
+        saveZoomLevel()
+    }
+
+    private func saveZoomLevel() {
+        UserDefaults.standard.set(Double(zoomLevel), forKey: DocumentState.zoomLevelKey)
     }
 
     func showFindBar() {
