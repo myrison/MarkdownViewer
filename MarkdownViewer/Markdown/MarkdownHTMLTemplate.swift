@@ -32,67 +32,28 @@ struct MarkdownHTMLTemplate {
             .replacingOccurrences(of: Self.scriptToken, with: scriptBlocks)
     }
 
+    // Use external file references instead of inlining JS/CSS content.
+    // highlight.min.js (119KB) + dagre.min.js (95KB) + beautiful-mermaid.js (185KB)
+    // would otherwise be duplicated in every tab's htmlContent string.
+    // The baseURL in WebView is set to Bundle.module.resourceURL so relative paths resolve correctly.
     private static func buildStyleBlocks() -> String {
-        let lightHighlight = resourceString(name: "github.min", extension: "css")
-        let darkHighlight = resourceString(name: "github-dark.min", extension: "css")
-        let markdown = resourceString(name: "markdown", extension: "css")
         return """
-        <style media="(prefers-color-scheme: light)">
-        \(lightHighlight)
-        </style>
-        <style media="(prefers-color-scheme: dark)">
-        \(darkHighlight)
-        </style>
-        <style>
-        \(markdown)
-        </style>
+        <link rel="stylesheet" media="(prefers-color-scheme: light)" href="github.min.css">
+        <link rel="stylesheet" media="(prefers-color-scheme: dark)" href="github-dark.min.css">
+        <link rel="stylesheet" href="markdown.css">
         """
     }
 
     private static func buildScriptBlocks() -> String {
-        let highlight = safeScript(resourceString(name: "highlight.min", extension: "js"))
-        let find = safeScript(resourceString(name: "find", extension: "js"))
-        let dagre = safeScript(resourceString(name: "dagre.min", extension: "js"))
-        let beautifulMermaid = safeScript(resourceString(name: "beautiful-mermaid", extension: "js"))
-        let mermaidInit = safeScript(resourceString(name: "beautiful-mermaid-init", extension: "js"))
-        let toc = safeScript(resourceString(name: "toc", extension: "js"))
-        let copyCode = safeScript(resourceString(name: "copy-code", extension: "js"))
         return """
-        <script>
-        \(highlight)
-        </script>
-        <script>
-        \(find)
-        </script>
-        <script>
-        \(dagre)
-        </script>
-        <script>
-        \(beautifulMermaid)
-        </script>
-        <script>
-        \(mermaidInit)
-        </script>
-        <script>
-        \(toc)
-        </script>
-        <script>
-        \(copyCode)
-        </script>
+        <script src="highlight.min.js"></script>
+        <script src="find.js"></script>
+        <script src="dagre.min.js"></script>
+        <script src="beautiful-mermaid.js"></script>
+        <script src="beautiful-mermaid-init.js"></script>
+        <script src="toc.js"></script>
+        <script src="copy-code.js"></script>
         """
-    }
-
-    private static func resourceString(name: String, extension ext: String) -> String {
-        guard let url = Bundle.module.url(forResource: name, withExtension: ext),
-              let data = try? Data(contentsOf: url),
-              let string = String(data: data, encoding: .utf8) else {
-            return ""
-        }
-        return string
-    }
-
-    private static func safeScript(_ script: String) -> String {
-        script.replacingOccurrences(of: "</script>", with: "<\\/script>")
     }
 
     private static let fallbackTemplate = """

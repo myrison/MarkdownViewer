@@ -8,6 +8,16 @@ private struct FindPayload: Encodable {
     let reset: Bool
 }
 
+// WKUserContentController retains its message handlers strongly, which prevents
+// the WKWebView from deallocating. This proxy breaks that retain cycle.
+private class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
+    weak var delegate: WKScriptMessageHandler?
+    init(_ delegate: WKScriptMessageHandler) { self.delegate = delegate }
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        delegate?.userContentController(userContentController, didReceive: message)
+    }
+}
+
 struct WebView: NSViewRepresentable {
     let htmlContent: String
     let scrollRequest: ScrollRequest?
@@ -23,7 +33,7 @@ struct WebView: NSViewRepresentable {
 
     func makeNSView(context: Context) -> WKWebView {
         let contentController = WKUserContentController()
-        contentController.add(context.coordinator, name: "outlinePosition")
+        contentController.add(WeakScriptMessageHandler(context.coordinator), name: "outlinePosition")
         let config = WKWebViewConfiguration()
         config.userContentController = contentController
         let webView = WKWebView(frame: .zero, configuration: config)
@@ -33,6 +43,10 @@ struct WebView: NSViewRepresentable {
         context.coordinator.lastZoomLevel = zoomLevel
         documentState?.webView = webView
         return webView
+    }
+
+    static func dismantleNSView(_ nsView: WKWebView, coordinator: Coordinator) {
+        nsView.configuration.userContentController.removeScriptMessageHandler(forName: "outlinePosition")
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
