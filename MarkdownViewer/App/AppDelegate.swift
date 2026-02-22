@@ -32,6 +32,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
         NSApplication.shared.activate(ignoringOtherApps: true)
+        cleanUpStaleTempHTMLFiles()
         windowCloseObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
             object: nil,
@@ -495,6 +496,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func currentOpenFileURLs() -> [URL] {
         NSApplication.shared.windows.compactMap { $0.documentState?.currentURL }
+    }
+
+    private func cleanUpStaleTempHTMLFiles() {
+        guard let resourcesURL = Bundle.module.resourceURL else { return }
+        let fm = FileManager.default
+        guard let contents = try? fm.contentsOfDirectory(at: resourcesURL, includingPropertiesForKeys: nil) else { return }
+        for url in contents where url.lastPathComponent.hasPrefix("mv_") && url.pathExtension == "html" {
+            try? fm.removeItem(at: url)
+        }
     }
 
     private func openInNewTab(url: URL?) {
