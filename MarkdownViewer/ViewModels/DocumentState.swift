@@ -52,7 +52,8 @@ class DocumentState: ObservableObject {
             var renderer = MarkdownRenderer()
             let rendered = renderer.render(document)
             let frontMatterHTML = renderFrontMatter(frontMatter)
-            htmlContent = wrapInHTML(frontMatterHTML + rendered.html, title: url.lastPathComponent)
+            let bodyHTML = resolveRelativeImagePaths(frontMatterHTML + rendered.html, relativeTo: url.deletingLastPathComponent())
+            htmlContent = wrapInHTML(bodyHTML, title: url.lastPathComponent)
             title = url.lastPathComponent
             outlineItems = MarkdownDocumentParser.normalizedOutline(rendered.outline)
             updateStatistics(content)
@@ -79,6 +80,59 @@ class DocumentState: ObservableObject {
         }
         html += "</table></div>\n"
         return html
+    }
+
+    /// Rewrites local `src` values in `<img>` tags to base64 data URIs so WKWebView
+    /// can display them without file-system access restrictions.
+    /// Remote URLs (http/https) and existing data URIs are left unchanged.
+    private func resolveRelativeImagePaths(_ html: String, relativeTo dir: URL) -> String {
+        var result = html
+        let pattern = #"(<img\b[^>]*?\bsrc=)(["'])([^"']*)(["'])"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
+            return html
+        }
+        let nsHTML = html as NSString
+        let matches = regex.matches(in: html, range: NSRange(location: 0, length: nsHTML.length))
+        // Process in reverse so replacements don't shift string offsets
+        for match in matches.reversed() {
+            let srcRange = match.range(at: 3)
+            let src = nsHTML.substring(with: srcRange)
+            // Leave remote and already-embedded images alone
+            if src.hasPrefix("http://") || src.hasPrefix("https://") || src.hasPrefix("data:") || src.hasPrefix("//") {
+                continue
+            }
+            // Resolve path: support relative paths and file:// URLs
+            let fileURL: URL
+            if src.hasPrefix("file://") {
+                guard let u = URL(string: src) else { continue }
+                fileURL = u
+            } else {
+                fileURL = dir.appendingPathComponent(src)
+            }
+            guard let data = try? Data(contentsOf: fileURL) else { continue }
+            let mime = mimeType(for: fileURL.pathExtension)
+            let dataURI = "data:\(mime);base64,\(data.base64EncodedString())"
+            let fullMatchRange = match.range
+            let fullMatch = nsHTML.substring(with: fullMatchRange)
+            let quote2Range = match.range(at: 4)
+            let before = (fullMatch as NSString).substring(to: srcRange.location - fullMatchRange.location)
+            let after = (fullMatch as NSString).substring(from: quote2Range.location - fullMatchRange.location)
+            let resultRange = Range(fullMatchRange, in: result)!
+            result = result.replacingCharacters(in: resultRange, with: before + dataURI + after)
+        }
+        return result
+    }
+
+    private func mimeType(for ext: String) -> String {
+        switch ext.lowercased() {
+        case "png":  return "image/png"
+        case "jpg", "jpeg": return "image/jpeg"
+        case "gif":  return "image/gif"
+        case "webp": return "image/webp"
+        case "svg":  return "image/svg+xml"
+        case "ico":  return "image/x-icon"
+        default:     return "image/png"
+        }
     }
 
     private func escapeHTML(_ string: String) -> String {
