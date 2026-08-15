@@ -171,9 +171,9 @@ struct MarkdownRenderer: MarkupWalker {
             for child in strikethrough.children { visit(child) }
             result += "</del>"
         case let inlineHTML as InlineHTML:
-            result += inlineHTML.rawHTML
+            result += HTMLSanitizer.sanitize(inlineHTML.rawHTML)
         case let htmlBlock as HTMLBlock:
-            result += htmlBlock.rawHTML
+            result += HTMLSanitizer.sanitize(htmlBlock.rawHTML)
             result += "\n"
         default:
             for child in markup.children {
