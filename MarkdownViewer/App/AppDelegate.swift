@@ -255,34 +255,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Tab context menu
 
     private func handleTabBarRightClick(_ event: NSEvent) -> NSEvent? {
-        guard let window = event.window, window.documentState != nil else { return event }
-
-        let locationInWindow = event.locationInWindow
-        let contentRect = window.contentLayoutRect
-
-        // Only handle clicks above the content area (title bar / tab bar)
-        guard locationInWindow.y > contentRect.maxY else { return event }
-
-        let tabs = window.tabbedWindows ?? [window]
-
-        let targetWindow: NSWindow
-        if tabs.count > 1 {
-            // Estimate which tab was clicked based on horizontal position.
-            // The traffic-light buttons occupy ~80px on the left; the
-            // "new tab" button takes ~40px on the right.
-            let tabBarLeft: CGFloat = 80
-            let tabBarRight = window.frame.width - 40
-            let tabBarWidth = max(tabBarRight - tabBarLeft, 1)
-            let tabWidth = tabBarWidth / CGFloat(tabs.count)
-            let relativeX = locationInWindow.x - tabBarLeft
-            let tabIndex = max(0, min(Int(relativeX / tabWidth), tabs.count - 1))
-            targetWindow = tabs[tabIndex]
-        } else {
-            targetWindow = window
-        }
-
-        showTabContextMenu(for: targetWindow, in: tabs, with: event)
+        guard event.window?.documentState != nil,
+              let target = tabTarget(for: event) else { return event }
+        showTabContextMenu(for: target.window, in: target.tabs, with: event)
         return nil
+    }
+
+    func tabTarget(for event: NSEvent) -> (window: NSWindow, tabs: [NSWindow])? {
+        guard let window = event.window else { return nil }
+        let point = event.locationInWindow
+        guard point.y > window.contentLayoutRect.maxY else { return nil }
+        let tabs = tabGroupWindows(for: window)
+        guard let layout = TabBarHitTester.layout(in: window),
+              layout.tabs.count == tabs.count,
+              let index = layout.tabIndex(at: point) else { return nil }
+        return (tabs[index], tabs)
     }
 
     private func showTabContextMenu(for targetWindow: NSWindow, in tabs: [NSWindow], with event: NSEvent) {
@@ -342,7 +329,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func contextCloseOtherTabs(_ sender: NSMenuItem) {
         guard let targetWindow = sender.representedObject as? NSWindow else { return }
-        let tabs = targetWindow.tabbedWindows ?? [targetWindow]
+        let tabs = tabGroupWindows(for: targetWindow)
         for tab in tabs where tab !== targetWindow {
             tab.close()
         }
@@ -350,7 +337,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func contextCloseTabsToRight(_ sender: NSMenuItem) {
         guard let targetWindow = sender.representedObject as? NSWindow else { return }
-        let tabs = targetWindow.tabbedWindows ?? [targetWindow]
+        let tabs = tabGroupWindows(for: targetWindow)
         guard let index = tabs.firstIndex(of: targetWindow) else { return }
         for tab in tabs[(index + 1)...] {
             tab.close()
@@ -359,7 +346,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func contextCloseTabsToLeft(_ sender: NSMenuItem) {
         guard let targetWindow = sender.representedObject as? NSWindow else { return }
-        let tabs = targetWindow.tabbedWindows ?? [targetWindow]
+        let tabs = tabGroupWindows(for: targetWindow)
         guard let index = tabs.firstIndex(of: targetWindow) else { return }
         for tab in tabs[..<index] {
             tab.close()

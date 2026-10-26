@@ -21,7 +21,7 @@
 - Prefer one primary type per file and name files after the primary type.
 
 ## Testing Guidelines
-- No test target exists yet. If you add tests, use XCTest under `Tests/MarkdownViewerTests/`.
+- Tests use XCTest and live in `Tests/MarkdownViewerTests/`.
 - Use `swift test` to run the suite; name test files `*Tests.swift`.
 
 ## Commit & Pull Request Guidelines
